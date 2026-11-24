@@ -100,23 +100,51 @@ body.locked #crosshair{display:block}
   border:2px solid rgba(255,201,60,.9);border-radius:50%;opacity:0;transition:opacity .1s}
 #hitzone.on{opacity:1}
 
-#receipt{position:absolute;right:12px;bottom:100px;width:250px;background:rgba(16,12,9,.9);
-  border:1px solid var(--stroke);border-radius:14px;padding:12px 14px;font-size:13px}
-#receipt h4{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8df3c6;margin-bottom:8px}
-#receipt .lines{max-height:150px;overflow:auto;margin-bottom:8px}
+#receipt{position:absolute;right:12px;bottom:100px;width:214px;background:rgba(16,12,9,.9);
+  border:1px solid var(--stroke);border-radius:12px;padding:9px 12px;font-size:12px;backdrop-filter:blur(6px)}
+#receipt h4{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8df3c6;margin-bottom:6px}
+#receipt .lines{max-height:112px;overflow:auto;margin-bottom:6px}
 #receipt .lines div{display:flex;justify-content:space-between;padding:2px 0;color:#e8ded0}
 #receipt .total{display:flex;justify-content:space-between;font-weight:800;border-top:1px solid var(--stroke);padding-top:7px;font-size:15px}
 #receipt .total b{color:#8df3c6}
 
-#closeStore{position:absolute;right:12px;bottom:12px;pointer-events:auto}
+#closeStore{position:absolute;right:12px;bottom:12px;pointer-events:auto;font-size:14px;padding:.5em 1em}
 
-#toast{position:fixed;left:50%;top:74px;transform:translateX(-50%);z-index:60;
-  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
-#toast div{background:rgba(24,18,13,.94);border:1px solid var(--stroke);border-left:4px solid var(--mustard);
-  border-radius:11px;padding:9px 16px;font-size:14px;animation:slideIn .2s ease-out;box-shadow:0 10px 24px rgba(0,0,0,.4)}
+/* Mobile/Touch: Bedienelemente unten rechts, Bon oben rechts – nichts
+   überlappt mehr die Aktionsknöpfe oder das Spielfeld. */
+body.touch #receipt{top:84px;bottom:auto;right:10px;width:172px;font-size:11px;padding:8px 10px}
+body.touch #receipt .lines{max-height:78px}
+body.touch #receipt .total{font-size:13px;padding-top:5px}
+body.touch #closeStore{right:112px;left:auto;bottom:88px;font-size:11px;padding:.38em .7em}
+body.touch .tbtn.act{right:20px;bottom:20px;width:82px;height:82px;font-size:18px}
+body.touch .tbtn.secondary{right:112px;bottom:22px;width:58px;height:58px;font-size:11px}
+body.touch .tbtn.third{right:178px;bottom:22px;width:58px;height:58px;font-size:11px}
+body.touch #prompt{bottom:112px;font-size:13px;padding:6px 13px}
+body.touch #toast{top:58px;max-width:min(330px,52vw)}
+body.touch #hud .hud-chip{min-width:66px;padding:5px 9px}
+body.touch #hud .hud-chip b{font-size:14px}
+@media (max-height:520px){
+  body.touch .tbtn.act{width:72px;height:72px;font-size:17px}
+  body.touch .tbtn.secondary,body.touch .tbtn.third{width:52px;height:52px}
+  body.touch #prompt{bottom:98px}
+  body.touch #closeStore{bottom:82px}
+}
+
+/* Hinweise: klein, oben mittig, höchstens zwei gleichzeitig – nichts mehr
+   mitten im Bild und keine Stapel über den ganzen Bildschirm. */
+#toast{position:fixed;left:50%;top:62px;transform:translateX(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:4px;align-items:center;pointer-events:none;
+  width:max-content;max-width:min(340px,46vw)}
+#toast div{background:rgba(24,18,13,.86);border:1px solid var(--stroke);border-left:3px solid var(--mustard);
+  border-radius:9px;padding:4px 11px;font-size:12px;line-height:1.32;text-align:center;
+  animation:slideIn .16s ease-out;box-shadow:0 6px 16px rgba(0,0,0,.32);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transform-origin:50% 0}
 #toast div.good{border-left-color:var(--mint)}
 #toast div.bad{border-left-color:var(--coral)}
-@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+#toast div.bump{animation:bump .18s ease-out}
+#toast div.out{opacity:0;transform:translateY(-5px);transition:opacity .28s,transform .28s}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes bump{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
 
 /* ---------- Bestellterminal ---------- */
 .tabs{display:flex;gap:6px;margin:14px 0 12px;flex-wrap:wrap}
@@ -162,10 +190,9 @@ body.locked #crosshair{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (max-width:560px){
   .panel{padding:18px}
-  .hud-chip{min-width:62px;padding:5px 9px}
-  .hud-chip b{font-size:14px}
   #objective{display:none}
-  #receipt{width:200px;bottom:auto;top:78px;right:10px}
+  #toast{top:58px;max-width:60vw}
+  #receipt{width:186px}
 }
 </style>
 </head>
