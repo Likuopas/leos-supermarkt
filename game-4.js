@@ -155,6 +155,7 @@ function clearRegister(r){
 
 function completeSale(r){
   const amount = r.total;
+  r.lastSale = {scanned: r.scanned.slice(), total: amount, at: performance.now()};
   state.money += amount;
   state.revenue += amount;
   state.soldToday += r.scanned.length;
@@ -170,15 +171,20 @@ function completeSale(r){
 function renderReceipt(r){
   const lines = $('#receiptLines');
   lines.innerHTML = '';
+  let scanned = r.scanned, total = r.total;
+  /* Nach dem Kassieren bleibt der Bon noch kurz sichtbar */
+  if(!scanned.length && !(total > 0) && r.lastSale && performance.now() - r.lastSale.at < 8000){
+    scanned = r.lastSale.scanned; total = r.lastSale.total;
+  }
   const counts = {};
-  for(const pid of r.scanned) counts[pid] = (counts[pid] || 0) + 1;
+  for(const pid of scanned) counts[pid] = (counts[pid] || 0) + 1;
   for(const pid in counts){
     const d = document.createElement('div');
     d.innerHTML = '<span>' + PMAP[pid].name + (counts[pid] > 1 ? ' ×' + counts[pid] : '') +
       '</span><span>' + eur(state.prices[pid] * counts[pid]) + '</span>';
     lines.appendChild(d);
   }
-  $('#receiptTotal').textContent = eur(r.total);
+  $('#receiptTotal').textContent = eur(total);
 }
 const updateReceipt = renderReceipt;
 
@@ -602,6 +608,9 @@ class Shopper {
       AU.place();
       this.timer = 0.55;
     } else {
+      /* Kunde hat nichts gefunden: nicht die Schlange blockieren */
+      const reg = this.register;
+      if(reg && !reg.items.length && !reg.total){ this.finish(); return; }
       this.state = 'wait';
       this.patience = 80;
     }
