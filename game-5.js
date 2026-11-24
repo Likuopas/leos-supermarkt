@@ -2,7 +2,7 @@
    Mitarbeiter
    ========================================================== */
 function hireEmployee(){
-  const m = makeShopperMesh(1.06);
+  const m = makeShopperMesh(1.04, {shirt:0xfffaf0, pants:0x2f3b4a, apron:0x39cf9b, cap:0x1aa38a});
   m.group.position.set(-1, 0, -6);
   scene.add(m.group);
   employees.push({group:m.group, mesh:m, timer:1.5, phase:0});
@@ -296,6 +296,8 @@ function initUI(){
   $('#btnSave').onclick = () => { saveGame(); toast('Spiel gespeichert', 'good'); AU.ok(); };
   $('#btnToMenu').onclick = () => {
     saveGame();
+    if(player.view) player.view.visible = false;
+    if(ceiling) ceiling.visible = false;
     panelOpen = false; gameState = 'menu';
     $('#pause').classList.remove('show');
     $('#hud').classList.add('hidden');
@@ -341,7 +343,7 @@ canvas.addEventListener('mousedown', e => {
 document.addEventListener('mousemove', e => {
   if(!document.pointerLockElement) return;
   camYaw -= e.movementX * 0.0022 * S.sens;
-  camPitch = clamp(camPitch - e.movementY * 0.0022 * S.sens, -0.85, 0.6);
+  camPitch = clamp(camPitch - e.movementY * 0.0022 * S.sens, -1.25, 1.25);
 });
 
 window.addEventListener('keydown', e => {
@@ -411,7 +413,7 @@ function initTouch(){
       const dx = t.clientX - lx, dy = t.clientY - ly;
       lx = t.clientX; ly = t.clientY;
       camYaw -= dx * 0.005 * S.sens;
-      camPitch = clamp(camPitch - dy * 0.004 * S.sens, -0.85, 0.6);
+      camPitch = clamp(camPitch - dy * 0.004 * S.sens, -1.25, 1.25);
     }
   }, {passive:false});
   look.addEventListener('touchend', e => {
@@ -458,6 +460,9 @@ function newGame(){
 function startGame(){
   $('#menu').classList.remove('show');
   $('#hud').classList.remove('hidden');
+  if(player.view) player.view.visible = true;
+  if(ceiling) ceiling.visible = true;
+  camPitch = -0.04;
   gameState = 'play';
   panelOpen = false;
   AU.init();
