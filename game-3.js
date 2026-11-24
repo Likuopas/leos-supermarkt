@@ -181,8 +181,8 @@ function updateHands(dt, moving){
   let bx = 0.28, by = 0.28, bz = 0.18;
 
   if(held && held.kind === 'crate'){
-    ax = 0.92; ay = 0.44; az = 0.04;
-    bx = 0.92; by = 0.44; bz = 0.04;
+    ax = 0.25; ay = 0.32; az = 0.02;
+    bx = 0.25; by = 0.32; bz = 0.02;
   } else if(held && held.kind === 'product'){
     ax = 0.86; ay = 0.44; az = 0.02;
     bx = 0.46; by = 0.32; bz = 0.16;
@@ -240,7 +240,6 @@ function updateTarget(){
   if(!best){ setPrompt('', false); return; }
   let label = best.label;
   if(best.kind === 'shelf' && !(player.held && player.held.kind === 'product')) label = best.ref.def.label + ' ansehen';
-  if(best.kind === 'crate' && !best.ref.opened) label = 'Karton öffnen';
   setPrompt(label + ' (E)', true);
 }
 
@@ -266,8 +265,8 @@ function setHeld(obj){
     const g = obj.crate.group;
     g.position.set(0, 0.02, 0);
     g.rotation.set(0, 0, 0);
-    g.scale.setScalar(0.64);
-    h.position.set(0, -0.14, -0.86);
+    g.scale.setScalar(0.5);
+    h.position.set(0.03, -0.50, -1.14);
     h.add(g);
     obj.crate.carried = true;
   } else {
@@ -379,13 +378,40 @@ function pickCrate(c){
   AU.pick();
 }
 
+/* Freie Stelle suchen: Karton nicht in Wände, Regale oder die Kasse stellen */
+function freeSpot(x, z, r){
+  let px = x, pz = z;
+  for(let iter=0; iter<8; iter++){
+    let hit = false;
+    for(const c of colliders){
+      const cx = clamp(px, c.minX, c.maxX), cz = clamp(pz, c.minZ, c.maxZ);
+      const dx = px - cx, dz = pz - cz;
+      const dd = dx*dx + dz*dz;
+      if(dd < r*r){
+        hit = true;
+        if(dd > 1e-6){
+          const d = Math.sqrt(dd);
+          px = cx + dx/d*r; pz = cz + dz/d*r;
+        } else {
+          /* Mittelpunkt im Hindernis: zur Spielerseite hin herausschieben */
+          const ox = player.pos.x - px, oz = player.pos.z - pz;
+          const ol = Math.hypot(ox, oz) || 1;
+          px -= ox/ol*r; pz -= oz/ol*r;
+        }
+      }
+    }
+    if(!hit) break;
+  }
+  return {x:px, z:pz};
+}
+
 function dropCrate(){
   const o = player.held;
   if(!o || o.kind !== 'crate') return;
   const c = o.crate;
   const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
-  const px = clamp(player.pos.x + fx*1.0, -13.5, 14);
-  const pz = clamp(player.pos.z + fz*1.0, -9, 13);
+  const spot = freeSpot(clamp(player.pos.x + fx*1.0, -13.4, 13.9), clamp(player.pos.z + fz*1.0, -9.4, 13.4), 0.52);
+  const px = spot.x, pz = spot.z;
   player.holder.remove(c.group);
   world.add(c.group);
   c.group.position.set(px, 0, pz);
