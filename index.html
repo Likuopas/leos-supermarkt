@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>LEO'S SUPERMARKT — Low-Poly Simulator</title>
+<style>
+:root{
+  --cream:#fff7e8; --ink:#221a14; --coral:#ff6b57; --mint:#39cf9b; --mustard:#ffc93c;
+  --sky:#4fb6ff; --panel:rgba(26,20,15,.9); --stroke:rgba(255,247,232,.16);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#0d1114;color:var(--cream);
+  font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+#canvas{position:fixed;inset:0;display:block;width:100%;height:100%}
+.hidden{display:none !important}
+
+/* ---------- Buttons & Panels ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5em;
+  padding:.72em 1.35em;border:none;border-radius:14px;cursor:pointer;
+  font-family:inherit;font-size:17px;font-weight:700;letter-spacing:.02em;
+  color:#2a1f16;background:linear-gradient(#ffe08a,#ffc93c);
+  box-shadow:0 5px 0 #c9972a,0 10px 18px rgba(0,0,0,.35);
+  transition:transform .07s ease,box-shadow .07s ease,filter .15s ease;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #c9972a,0 4px 10px rgba(0,0,0,.35)}
+.btn.primary{background:linear-gradient(#7bf0c2,#39cf9b);box-shadow:0 5px 0 #22996f,0 10px 18px rgba(0,0,0,.35)}
+.btn.primary:active{box-shadow:0 1px 0 #22996f,0 4px 10px rgba(0,0,0,.35)}
+.btn.danger{background:linear-gradient(#ff9d8c,#ff6b57);box-shadow:0 5px 0 #bd4232,0 10px 18px rgba(0,0,0,.35)}
+.btn.danger:active{box-shadow:0 1px 0 #bd4232,0 4px 10px rgba(0,0,0,.35)}
+.btn.ghost{background:rgba(255,247,232,.1);color:var(--cream);box-shadow:none;border:1px solid var(--stroke)}
+.btn.ghost:hover{background:rgba(255,247,232,.18)}
+.btn.small{padding:.45em .9em;font-size:14px;border-radius:10px}
+.btn.wide{width:100%}
+.btn:disabled{filter:grayscale(.7) brightness(.7);cursor:not-allowed}
+
+.overlay{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 35%,rgba(12,18,22,.55),rgba(8,11,13,.92));
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);padding:16px}
+.overlay.show{display:flex}
+.panel{
+  width:min(880px,96vw);max-height:92vh;overflow:auto;background:var(--panel);
+  border:1px solid var(--stroke);border-radius:22px;padding:24px 26px;
+  box-shadow:0 30px 70px rgba(0,0,0,.55);animation:pop .18s ease-out;
+}
+@keyframes pop{from{transform:scale(.94) translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.panel h2{font-size:26px;margin-bottom:4px;letter-spacing:.02em}
+.panel h3{font-size:17px;margin:18px 0 10px;color:var(--mustard);letter-spacing:.06em;text-transform:uppercase}
+.panel p{line-height:1.55;color:#e8ded0;font-size:15px}
+.panel .sub{color:#c3b6a5;font-size:14px;margin-bottom:14px}
+.panel .foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px dashed rgba(255,247,232,.1)}
+.row:last-child{border-bottom:none}
+.row label{font-size:15px;color:#efe5d6}
+.row .hint{display:block;font-size:12px;color:#a89a89;margin-top:2px}
+
+select,input[type="range"],input[type="number"]{
+  font-family:inherit;font-size:15px;border-radius:10px;border:1px solid var(--stroke);
+  background:#1d1611;color:var(--cream);padding:.45em .6em;min-width:130px;outline:none
+}
+input[type="range"]{padding:0;accent-color:#ffc93c;min-width:170px}
+select:focus,input:focus{border-color:var(--mustard)}
+
+/* ---------- Hauptmenü ---------- */
+#menu .panel{width:min(560px,94vw);text-align:center;background:linear-gradient(180deg,rgba(26,20,15,.94),rgba(38,26,18,.96))}
+.logo{font-size:clamp(34px,7vw,58px);line-height:.98;font-weight:900;letter-spacing:-.01em;
+  background:linear-gradient(#fff4c4,#ffc93c 55%,#ff8f4a);-webkit-background-clip:text;background-clip:text;
+  color:transparent;filter:drop-shadow(0 4px 0 rgba(0,0,0,.35))}
+.logo small{display:block;font-size:.34em;letter-spacing:.28em;color:#ffe9a8;-webkit-text-fill-color:#ffe9a8;margin-top:8px}
+#menu .tagline{color:#cbbda9;margin:10px 0 22px;font-size:14px}
+#menu .btn{width:100%;margin-bottom:11px;font-size:18px}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;z-index:15;pointer-events:none;transition:opacity .2s}
+.hud-top{position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 24px)}
+.hud-chip{background:rgba(24,18,13,.78);border:1px solid var(--stroke);border-radius:12px;
+  padding:6px 11px;min-width:74px;backdrop-filter:blur(6px)}
+.hud-chip .lbl{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#b7a894}
+.hud-chip b{font-size:16px;letter-spacing:.02em}
+.hud-chip.money b{color:#8df3c6}
+.hud-chip.rev b{color:#ffe08a}
+.hud-chip.warn b{color:#ff9d8c}
+
+#objective{position:absolute;top:12px;right:12px;max-width:min(320px,46vw);
+  background:rgba(24,18,13,.78);border:1px solid var(--stroke);border-left:4px solid var(--mint);
+  border-radius:12px;padding:9px 13px;font-size:13px;line-height:1.45;backdrop-filter:blur(6px)}
+#objective .ot{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8df3c6;display:block;margin-bottom:3px}
+
+#prompt{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+  background:rgba(24,18,13,.86);border:1px solid var(--stroke);border-radius:12px;
+  padding:8px 16px;font-size:15px;white-space:nowrap;display:flex;align-items:center;gap:9px}
+#prompt kbd{background:#ffc93c;color:#2a1f16;border-radius:6px;padding:1px 7px;font-weight:800;font-size:13px;font-family:inherit}
+
+#crosshair{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;
+  border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 0 0 2px rgba(0,0,0,.35);display:none}
+body.locked #crosshair{display:block}
+#hitzone{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;
+  border:2px solid rgba(255,201,60,.9);border-radius:50%;opacity:0;transition:opacity .1s}
+#hitzone.on{opacity:1}
+
+#receipt{position:absolute;right:12px;bottom:100px;width:250px;background:rgba(16,12,9,.9);
+  border:1px solid var(--stroke);border-radius:14px;padding:12px 14px;font-size:13px}
+#receipt h4{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8df3c6;margin-bottom:8px}
+#receipt .lines{max-height:150px;overflow:auto;margin-bottom:8px}
+#receipt .lines div{display:flex;justify-content:space-between;padding:2px 0;color:#e8ded0}
+#receipt .total{display:flex;justify-content:space-between;font-weight:800;border-top:1px solid var(--stroke);padding-top:7px;font-size:15px}
+#receipt .total b{color:#8df3c6}
+
+#closeStore{position:absolute;right:12px;bottom:12px;pointer-events:auto}
+
+#toast{position:fixed;left:50%;top:74px;transform:translateX(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+#toast div{background:rgba(24,18,13,.94);border:1px solid var(--stroke);border-left:4px solid var(--mustard);
+  border-radius:11px;padding:9px 16px;font-size:14px;animation:slideIn .2s ease-out;box-shadow:0 10px 24px rgba(0,0,0,.4)}
+#toast div.good{border-left-color:var(--mint)}
+#toast div.bad{border-left-color:var(--coral)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+/* ---------- Bestellterminal ---------- */
+.tabs{display:flex;gap:6px;margin:14px 0 12px;flex-wrap:wrap}
+.tab{padding:.5em 1em;border-radius:10px;background:rgba(255,247,232,.08);cursor:pointer;font-size:14px;
+  border:1px solid transparent;font-weight:700}
+.tab.active{background:var(--mustard);color:#2a1f16;border-color:#fff}
+.plist{display:flex;flex-direction:column;gap:6px}
+.pitem{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;
+  padding:8px 10px;border-radius:10px;background:rgba(255,247,232,.05);border:1px solid rgba(255,247,232,.06)}
+.pitem .nm{font-size:14px;font-weight:700}
+.pitem .nm span{display:block;font-size:11px;color:#a89a89;font-weight:400;letter-spacing:.04em}
+.pitem .price{font-size:13px;color:#ffe08a;min-width:86px;text-align:right}
+.pitem input[type=number]{width:74px;min-width:74px;padding:.3em .4em;font-size:13px}
+.stocktag{font-size:11px;color:#8df3c6}
+
+/* ---------- Mobile ---------- */
+#touch{position:fixed;inset:0;z-index:20;pointer-events:none}
+#stick{position:absolute;left:22px;bottom:26px;width:132px;height:132px;border-radius:50%;
+  background:rgba(24,18,13,.42);border:2px solid rgba(255,247,232,.28);pointer-events:auto;touch-action:none}
+#knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffe08a,#ffc93c);box-shadow:0 4px 12px rgba(0,0,0,.45)}
+#lookzone{position:absolute;right:0;top:0;width:58%;height:100%;pointer-events:auto;touch-action:none}
+.tbtn{position:absolute;width:74px;height:74px;border-radius:50%;border:2px solid rgba(255,247,232,.3);
+  background:rgba(24,18,13,.55);color:var(--cream);font-size:15px;font-weight:800;font-family:inherit;
+  pointer-events:auto;touch-action:none;backdrop-filter:blur(4px)}
+.tbtn.act{right:24px;bottom:118px;width:92px;height:92px;font-size:20px;
+  background:radial-gradient(circle at 35% 30%,#7bf0c2,#39cf9b);color:#1d3b2f;border-color:#c8ffe9}
+.tbtn.secondary{right:128px;bottom:34px;width:62px;height:62px;font-size:12px}
+.tbtn.third{right:24px;bottom:26px;width:62px;height:62px;font-size:12px}
+
+/* ---------- Tagübersicht ---------- */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.sum-cell{background:rgba(255,247,232,.06);border:1px solid var(--stroke);border-radius:14px;padding:12px 14px}
+.sum-cell .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#b7a894}
+.sum-cell .v{font-size:22px;font-weight:800;margin-top:3px}
+.sum-cell.good .v{color:#8df3c6}
+.sum-cell.bad .v{color:#ff9d8c}
+
+#loading{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;gap:14px;
+  align-items:center;justify-content:center;background:#12171b;font-size:15px;color:#cbbda9}
+#loading .spin{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,201,60,.25);
+  border-top-color:#ffc93c;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:560px){
+  .panel{padding:18px}
+  .hud-chip{min-width:62px;padding:5px 9px}
+  .hud-chip b{font-size:14px}
+  #objective{display:none}
+  #receipt{width:200px;bottom:auto;top:78px;right:10px}
+}
+</style>
+</head>
+<body class="">
+<canvas id="canvas"></canvas>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-chip money"><span class="lbl">Kasse</span><b id="hudMoney">0 €</b></div>
+    <div class="hud-chip"><span class="lbl">Tag</span><b id="hudDay">1</b></div>
+    <div class="hud-chip"><span class="lbl">Uhrzeit</span><b id="hudTime">08:00</b></div>
+    <div class="hud-chip"><span class="lbl">Kunden</span><b id="hudCust">0</b></div>
+    <div class="hud-chip rev"><span class="lbl">Umsatz heute</span><b id="hudRev">0 €</b></div>
+  </div>
+  <div id="objective"><span class="ot">Nächster Schritt</span><span id="objText">Ware am Terminal bestellen</span></div>
+  <div id="prompt" class="hidden"><kbd>E</kbd><span id="promptText"></span></div>
+  <div id="crosshair"></div>
+  <div id="hitzone"></div>
+  <div id="receipt" class="hidden">
+    <h4>Kassenbon</h4>
+    <div class="lines" id="receiptLines"></div>
+    <div class="total"><span>Summe</span><b id="receiptTotal">0,00 €</b></div>
+  </div>
+  <button id="closeStore" class="btn small danger">Laden schließen</button>
+</div>
+
+<!-- ============ Touch ============ -->
+<div id="touch" class="hidden">
+  <div id="lookzone"></div>
+  <div id="stick"><div id="knob"></div></div>
+  <button id="tAct" class="tbtn act">E</button>
+  <button id="tOpen" class="tbtn secondary">Öffnen</button>
+  <button id="tDrop" class="tbtn third">Ablegen</button>
+</div>
+
+<!-- ============ Hauptmenü ============ -->
+<div id="menu" class="overlay show">
+  <div class="panel">
+    <div class="logo">LEO'S<small>SUPERMARKT</small></div>
+    <div style="font-size:34px;margin:-4px 0 0;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))">🥕🛒🥛</div>
+    <p class="tagline">Low-Poly-Simulator · bestellen, einräumen, scannen, ausbauen</p>
+    <button id="btnPlay" class="btn primary">Play</button>
+    <button id="btnContinue" class="btn hidden">Weiterspielen</button>
+    <button id="btnSettings" class="btn">Settings</button>
+    <button id="btnCredits" class="btn">Credits</button>
+    <button id="btnQuit" class="btn ghost">Quit Game</button>
+  </div>
+</div>
+
+<!-- ============ Einstellungen ============ -->
+<div id="settings" class="overlay">
+  <div class="panel">
+    <h2>Einstellungen</h2>
+    <p class="sub">Alles wird automatisch im Browser gespeichert.</p>
+
+    <h3>Grafik</h3>
+    <div class="row"><label>Auflösung<span class="hint">Renderhöhe in Pixel – „Auto" nutzt die Anzeige</span></label>
+      <select id="setRes">
+        <option value="auto">Auto</option><option value="1080">1080p</option>
+        <option value="900">900p</option><option value="720">720p</option>
+        <option value="600">600p</option><option value="480">480p</option>
+      </select></div>
+    <div class="row"><label>Grafikqualität</label>
+      <select id="setQuality"><option value="low">Low</option><option value="medium">Medium</option>
+        <option value="high">High</option><option value="ultra">Ultra</option></select></div>
+    <div class="row"><label>Schatten</label><select id="setShadows"><option value="1">An</option><option value="0">Aus</option></select></div>
+    <div class="row"><label>V-Sync<span class="hint">wird vom Browser/GPU gesteuert, Schalter merkt sich deine Wahl</span></label>
+      <select id="setVsync"><option value="1">An</option><option value="0">Aus</option></select></div>
+    <div class="row"><label>Anzeigemodus</label>
+      <select id="setMode"><option value="window">Fenster</option><option value="fullscreen">Vollbild</option>
+        <option value="borderless">Randlos (Vollbild)</option></select></div>
+    <div class="row"><label>FPS-Limit</label>
+      <select id="setFps"><option value="0">Unbegrenzt</option><option value="30">30</option>
+        <option value="60">60</option><option value="120">120</option><option value="144">144</option></select></div>
+
+    <h3>Steuerung &amp; Plattform</h3>
+    <div class="row"><label>Modus</label>
+      <select id="setPlatform"><option value="auto">Automatisch erkennen</option><option value="pc">PC</option><option value="mobile">Mobile</option></select></div>
+    <div class="row"><label>Maus-Empfindlichkeit</label>
+      <input id="setSens" type="range" min="0.3" max="2.4" step="0.1" /><span id="setSensV" style="width:38px;text-align:right">1.0</span></div>
+
+    <h3>Audio</h3>
+    <div class="row"><label>Gesamtlautstärke</label><input id="setMaster" type="range" min="0" max="1" step="0.05" /></div>
+    <div class="row"><label>Musik</label><input id="setMusic" type="range" min="0" max="1" step="0.05" /></div>
+    <div class="row"><label>Soundeffekte</label><input id="setSfx" type="range" min="0" max="1" step="0.05" /></div>
+
+    <div class="foot"><button id="btnSetBack" class="btn">Zurück</button></div>
+  </div>
+</div>
+
+<!-- ============ Credits ============ -->
+<div id="credits" class="overlay">
+  <div class="panel">
+    <h2>Credits</h2>
+    <p class="sub">Ein Fan-Projekt im bunten Low-Poly-Look.</p>
+    <h3>Spiel &amp; Design</h3>
+    <p>Gebaut als eigenständige Single-File-Simulation: Welt, Figuren, Produkte, Regale und Sounds werden vollständig im Code erzeugt – keine externen Modelle oder Audio-Dateien.</p>
+    <h3>Technik</h3>
+    <p>Rendering: three.js (CDN) · KI &amp; Pathfinding: eigenes A*-Grid · Sound: WebAudio-Synthesizer · Speicherstand: localStorage.</p>
+    <h3>Stil</h3>
+    <p>Inspiriert von farbenfrohen Indie-Simulatoren im Leo-Polo-Look. Alle Namen und Produkte sind fiktiv.</p>
+    <div class="foot"><button id="btnCreditsBack" class="btn">Zurück</button></div>
+  </div>
+</div>
+
+<!-- ============ Pause ============ -->
+<div id="pause" class="overlay">
+  <div class="panel" style="width:min(420px,94vw);text-align:center">
+    <h2>Pause</h2>
+    <p class="sub">Der Laden wartet auf dich.</p>
+    <button id="btnResume" class="btn primary wide" style="margin-bottom:10px">Weiter</button>
+    <button id="btnPauseSettings" class="btn wide" style="margin-bottom:10px">Einstellungen</button>
+    <button id="btnSave" class="btn wide" style="margin-bottom:10px">Spiel speichern</button>
+    <button id="btnToMenu" class="btn ghost wide">Hauptmenü</button>
+  </div>
+</div>
+
+<!-- ============ Bestellterminal ============ -->
+<div id="order" class="overlay">
+  <div class="panel">
+    <h2>Laden-Terminal</h2>
+    <p class="sub">Bestellungen kommen an der Lieferrampe vor dem Eingang an.</p>
+    <div class="tabs">
+      <div class="tab active" data-tab="order">Bestellen</div>
+      <div class="tab" data-tab="price">Preise</div>
+      <div class="tab" data-tab="upgrade">Ausbau</div>
+    </div>
+    <div id="tabOrder">
+      <div class="plist" id="orderList"></div>
+      <p class="hint" style="margin-top:12px">Jede Bestellung: 10 Stück + 4 € Liefergebühr.</p>
+    </div>
+    <div id="tabPrice" class="hidden">
+      <div class="plist" id="priceList"></div>
+      <p class="hint" style="margin-top:12px">Zu hohe Preise schrecken Kunden ab (Richtwert: 1,4× Einkaufspreis).</p>
+    </div>
+    <div id="tabUpgrade" class="hidden">
+      <div class="plist" id="upgradeList"></div>
+    </div>
+    <div class="foot"><button id="btnOrderClose" class="btn">Schließen</button></div>
+  </div>
+</div>
+
+<!-- ============ Tagesübersicht ============ -->
+<div id="summary" class="overlay">
+  <div class="panel" style="width:min(620px,94vw)">
+    <h2 id="sumTitle">Tagesabschluss</h2>
+    <p class="sub" id="sumSub">Der Laden ist geschlossen.</p>
+    <div class="sum-grid" id="sumGrid"></div>
+    <p id="sumEvents" style="font-size:14px;color:#cbbda9"></p>
+    <div class="foot"><button id="btnNextDay" class="btn primary">Nächster Tag</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="loading"><div class="spin"></div><div>Laden wird aufgebaut …</div></div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.161.0/build/three.module.js" } }
+</script>
+
+<!-- three.js als Modul laden und global bereitstellen; die Spielteile laufen
+     danach in fester Reihenfolge (defer klassische Skripte). -->
+<script type="module">
+import * as THREE from 'three';
+window.THREE = THREE;
+</script>
+<script defer src="./game-1.js"></script>
+<script defer src="./game-2.js"></script>
+<script defer src="./game-3.js"></script>
+<script defer src="./game-4.js"></script>
+<script defer src="./game-5.js"></script>
+</body>
+</html>
