@@ -103,7 +103,7 @@ function updateHUD(){
 
   const near = registers.find(r => Math.hypot(player.pos.x - r.x, player.pos.z - r.z) < 5);
   const rp = $('#receipt');
-  if(near && (near.items.length || near.total > 0)){
+  if(near && (near.items.length || near.total > 0 || (near.lastSale && performance.now() - near.lastSale.at < 8000))){
     renderReceipt(near);
     rp.classList.remove('hidden');
   } else {
