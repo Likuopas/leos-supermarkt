@@ -2,41 +2,97 @@
    Spieler, Kamera, Steuerung, Interaktion, Bestellung
    ========================================================== */
 const player = {
-  pos: new THREE.Vector3(0, 0, 5.8), yaw: Math.PI, group: null,
+  pos: new THREE.Vector3(-2.6, 0, 6.6), yaw: 0, group: null,
   legL: null, legR: null, armL: null, armR: null, holder: null,
-  phase: 0, held: null, speed: 4.4, radius: 0.38
+  phase: 0, held: null, speed: 4.3, radius: 0.38,
+  view: null, bob: 0, bobX: 0, roll: 0, eye: 1.62
 };
-let camYaw = Math.PI, camPitch = -0.2;
-const camDist = 4.9;
+let camYaw = 0, camPitch = -0.04;
 let gameState = 'menu';   // menu | play | paused | panel | closed
 let panelOpen = false;
 let target = null;
 const keys = {};
 const mobileMove = {active:false, x:0, y:0};
 
+/* ==========================================================
+   Egoperspektive: zwei Arme mit Händen, fest an der Kamera
+   ========================================================== */
 function buildPlayer(){
-  const g = new THREE.Group();
-  const skin = mat(0xffcf9f), shirt = mat(0xff6b57), pants = mat(0x3d5a80);
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(.58,.64,.36), shirt);
-  torso.position.y = 1.12; torso.castShadow = true; g.add(torso);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(.48,.44,.44), skin);
-  head.position.y = 1.68; head.castShadow = true; g.add(head);
-  const hair = new THREE.Mesh(new THREE.BoxGeometry(.52,.14,.48), mat(0x3a2a1e));
-  hair.position.y = 1.9; g.add(hair);
-  const eyeGeo = new THREE.BoxGeometry(.07,.09,.03), eyeMat = mat(0x241a12);
-  const e1 = new THREE.Mesh(eyeGeo, eyeMat); e1.position.set(-.11,1.7,.225); g.add(e1);
-  const e2 = new THREE.Mesh(eyeGeo, eyeMat); e2.position.set(.11,1.7,.225); g.add(e2);
-  const armGeo = new THREE.BoxGeometry(.16,.52,.18); armGeo.translate(0,-.26,0);
-  const armL = new THREE.Mesh(armGeo, shirt); armL.position.set(-.38,1.4,0); armL.castShadow = true; g.add(armL);
-  const armR = new THREE.Mesh(armGeo, shirt); armR.position.set(.38,1.4,0); armR.castShadow = true; g.add(armR);
-  const legGeo = new THREE.BoxGeometry(.2,.56,.22); legGeo.translate(0,-.28,0);
-  const legL = new THREE.Mesh(legGeo, pants); legL.position.set(-.15,.62,0); legL.castShadow = true; g.add(legL);
-  const legR = new THREE.Mesh(legGeo, pants); legR.position.set(.15,.62,0); legR.castShadow = true; g.add(legR);
-  const holder = new THREE.Group(); holder.position.set(0,1.02,.52); g.add(holder);
-  g.position.copy(player.pos);
-  scene.add(g);
-  player.group = g; player.legL = legL; player.legR = legR;
-  player.armL = armL; player.armR = armR; player.holder = holder;
+  scene.add(camera);
+  camera.rotation.order = 'YXZ';
+
+  const view = new THREE.Group();
+  view.visible = false;
+  camera.add(view);
+
+  const skinM = mat(0xffd2a6);
+  const sleeveM = mat(0xff6b57);
+  const cuffM = mat(0xe4553f);
+  const nailM = mat(0xffe3c9);
+
+  function arm(side){
+    const g = new THREE.Group();
+    /* Ärmel */
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.07, 0.20, 8), sleeveM);
+    sleeve.rotation.x = Math.PI/2; sleeve.position.z = -0.09; g.add(sleeve);
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.06, 0.035, 8), cuffM);
+    cuff.rotation.x = Math.PI/2; cuff.position.z = -0.20; g.add(cuff);
+    /* Unterarm */
+    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.055, 0.13, 8), skinM);
+    fore.rotation.x = Math.PI/2; fore.position.z = -0.25; g.add(fore);
+
+    /* Hand als eigene Gruppe – leicht nach unten gekippt */
+    const hand = new THREE.Group();
+    hand.position.z = -0.305;
+    hand.rotation.x = -0.30;
+    const wrist = new THREE.Mesh(new THREE.BoxGeometry(0.082, 0.048, 0.06), skinM);
+    wrist.position.z = -0.01; hand.add(wrist);
+    const palm = new THREE.Mesh(new THREE.BoxGeometry(0.098, 0.046, 0.115), skinM);
+    palm.position.z = -0.10; hand.add(palm);
+    /* Finger (leicht gefächert und gebeugt) */
+    for(let i=0;i<4;i++){
+      const len = i === 0 ? 0.066 : (i === 3 ? 0.05 : 0.059);
+      const base = new THREE.Group();
+      base.position.set(-0.036 + i*0.024, 0.001, -0.155);
+      base.rotation.x = -0.32; base.rotation.z = (i-1.5)*0.05;
+      const f = new THREE.Mesh(new THREE.BoxGeometry(0.021, 0.027, len), skinM);
+      f.position.z = -len/2;
+      base.add(f);
+      const nail = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.006, 0.014), nailM);
+      nail.position.set(0, 0.017, -len + 0.006);
+      base.add(nail);
+      hand.add(base);
+    }
+    /* Daumen */
+    const thumbBase = new THREE.Group();
+    thumbBase.position.set(side * 0.05, 0.004, -0.06);
+    thumbBase.rotation.y = side * 0.75;
+    thumbBase.rotation.x = -0.25;
+    const th = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.028, 0.072), skinM);
+    th.position.z = -0.036;
+    thumbBase.add(th);
+    hand.add(thumbBase);
+    g.add(hand);
+
+    g.traverse(o => { if(o.isMesh){ o.castShadow = false; o.receiveShadow = false; } });
+    g.position.set(side * 0.30, -0.27, -0.32);
+    g.rotation.order = 'YXZ';
+    g.rotation.set(0.28, side * 0.30, side * 0.18);
+    view.add(g);
+    return g;
+  }
+
+  player.armL = arm(-1);
+  player.armR = arm(1);
+
+  const holder = new THREE.Group();
+  holder.position.set(0, -0.10, -0.72);
+  view.add(holder);
+
+  view.scale.setScalar(0.94);
+  player.view = view;
+  player.holder = holder;
+  player.group = null;
 }
 
 /* ---------- Kollision Spieler gegen Möbel/Wände ---------- */
@@ -65,24 +121,16 @@ function resolveCollisions(p, r){
   p.z = clamp(p.z, -9.5, 13.5);
 }
 
-/* ---------- Kamera ---------- */
-const camTarget = new THREE.Vector3();
+/* ---------- Kamera (Egoperspektive) ---------- */
 function updateCamera(dt){
-  const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
-  camTarget.set(
-    player.pos.x - Math.sin(camYaw)*camDist*cp,
-    1.45 + camDist*sp,
-    player.pos.z - Math.cos(camYaw)*camDist*cp
-  );
-  if(camTarget.y < 0.8) camTarget.y = 0.8;
-  camera.position.lerp(camTarget, 1 - Math.pow(0.0008, dt));
-  camera.lookAt(player.pos.x, 1.35, player.pos.z);
+  camera.position.set(player.pos.x + player.bobX, player.eye + player.bob, player.pos.z);
+  camera.rotation.set(camPitch, camYaw, player.roll, 'YXZ');
 }
 
 /* ---------- Spieler-Update ---------- */
 function updatePlayer(dt){
-  const fx = Math.sin(camYaw), fz = Math.cos(camYaw);
-  const rx = -Math.cos(camYaw), rz = Math.sin(camYaw);
+  const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
+  const rx = Math.cos(camYaw), rz = -Math.sin(camYaw);
   let mx = 0, mz = 0;
   if(keys['KeyW'] || keys['ArrowUp']) mz += 1;
   if(keys['KeyS'] || keys['ArrowDown']) mz -= 1;
@@ -99,22 +147,55 @@ function updatePlayer(dt){
     const sp = player.speed * Math.min(1, len) * dt;
     player.pos.x += dx*sp;
     player.pos.z += dz*sp;
+    player.yaw = Math.atan2(-dx, -dz);
     moving = true;
-    player.phase += dt*9;
+    player.phase += dt*10;
   } else {
-    player.phase += dt*1.5;
+    player.phase += dt*1.6;
   }
-  player.group.rotation.y = camYaw;
   resolveCollisions(player.pos, player.radius);
-  player.group.position.x = player.pos.x;
-  player.group.position.z = player.pos.z;
-  player.group.position.y = moving ? Math.abs(Math.sin(player.phase))*0.045 : 0;
-  const sw = moving ? Math.sin(player.phase)*0.55 : Math.sin(player.phase*0.4)*0.04;
-  player.legL.rotation.x = sw;
-  player.legR.rotation.x = -sw;
-  player.armL.rotation.x = -sw*0.7;
-  player.armR.rotation.x = (player.held ? -1.25 : sw*0.7);
-  if(moving && Math.random() < dt*3.4) AU.step();
+
+  player.bob += ((Math.abs(Math.sin(player.phase))*0.034*(moving?1:0)) - player.bob) * Math.min(1, dt*14);
+  player.bobX += ((Math.cos(player.phase)*0.021*(moving?1:0)) - player.bobX) * Math.min(1, dt*10);
+  player.roll += (((moving ? -Math.sin(player.phase)*0.013 : 0)) - player.roll) * Math.min(1, dt*8);
+
+  updateHands(dt, moving);
+  if(moving && Math.random() < dt*3.6) AU.step();
+}
+
+/* ---------- Hände: laufen, atmen, tragen ---------- */
+function handLerp(a, x, y, z, dt){
+  const k = Math.min(1, dt*12);
+  a.rotation.x += (x - a.rotation.x)*k;
+  a.rotation.y += (y - a.rotation.y)*k;
+  a.rotation.z += (z - a.rotation.z)*k;
+}
+function updateHands(dt, moving){
+  if(!player.view) return;
+  const t = performance.now()*0.001;
+  const held = player.held;
+  const walk = moving ? Math.sin(player.phase)*0.055 : 0;
+  const breath = Math.sin(t*1.7)*0.018;
+
+  let ax = 0.28, ay = 0.28, az = 0.18;
+  let bx = 0.28, by = 0.28, bz = 0.18;
+
+  if(held && held.kind === 'crate'){
+    ax = 0.92; ay = 0.44; az = 0.04;
+    bx = 0.92; by = 0.44; bz = 0.04;
+  } else if(held && held.kind === 'product'){
+    ax = 0.86; ay = 0.44; az = 0.02;
+    bx = 0.46; by = 0.32; bz = 0.16;
+  }
+
+  handLerp(player.armR, ax + walk + breath, ay, -az, dt);
+  handLerp(player.armL, bx - walk - breath, -by, bz, dt);
+
+  const v = player.view;
+  v.position.y = Math.sin(player.phase*2)*0.012*(moving?1:0) + Math.sin(t*1.4)*0.004;
+  v.position.x = Math.cos(player.phase)*0.007*(moving?1:0);
+  v.rotation.z = Math.sin(player.phase)*0.018*(moving?1:0);
+  v.rotation.x = -player.bob*0.6;
 }
 
 /* ---------- Interaktionsziel suchen ---------- */
@@ -132,7 +213,7 @@ function registerLabel(r){
 }
 
 function updateTarget(){
-  const f = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
+  const f = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
   const cands = [];
   cands.push({kind:'terminal', pos:new THREE.Vector3(TERM.x, 0, TERM.z + 1.1), label:'Bestellterminal' });
   for(const r of registers) cands.push({kind:'register', ref:r, pos:new THREE.Vector3(r.x, 0, r.z - 1.4), label:registerLabel(r)});
@@ -183,13 +264,18 @@ function setHeld(obj){
   if(!obj) return;
   if(obj.kind === 'crate'){
     const g = obj.crate.group;
-    g.position.set(0, 0, 0);
+    g.position.set(0, 0.02, 0);
     g.rotation.set(0, 0, 0);
-    g.scale.setScalar(0.86);
+    g.scale.setScalar(0.64);
+    h.position.set(0, -0.14, -0.86);
     h.add(g);
     obj.crate.carried = true;
   } else {
-    h.add(productMesh(obj.pid));
+    h.position.set(0.14, -0.18, -0.66);
+    const m = productMesh(obj.pid);
+    m.rotation.set(0.20, -0.35, 0);
+    m.scale.setScalar(0.92);
+    h.add(m);
   }
 }
 
@@ -223,9 +309,14 @@ function makeCrate(pid, qty){
     piv.add(fm); g.add(piv);
     flaps.push({piv:piv, sz:sz, open:0});
   }
+  const tape = mat(0xe3d3ae);
+  const tapeTop = new THREE.Mesh(new THREE.BoxGeometry(.3,.012,.78), tape);
+  tapeTop.position.set(0,.505,0); g.add(tapeTop);
+  const tapeSide = new THREE.Mesh(new THREE.BoxGeometry(.76,.012,.09), tape);
+  tapeSide.position.set(0,.503,.29); g.add(tapeSide);
   const label = new THREE.Mesh(
     new THREE.PlaneGeometry(.46,.24),
-    new THREE.MeshLambertMaterial({map: signTexture(PMAP[pid].name, '', '#fff7e8', '#2b2118')})
+    new THREE.MeshLambertMaterial({map: signTexture(PMAP[pid].name + ' ×' + qty, '', '#fff7e8', '#2b2118')})
   );
   label.position.set(0, .27, .372);
   g.add(label);
@@ -292,7 +383,7 @@ function dropCrate(){
   const o = player.held;
   if(!o || o.kind !== 'crate') return;
   const c = o.crate;
-  const fx = Math.sin(camYaw), fz = Math.cos(camYaw);
+  const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
   const px = clamp(player.pos.x + fx*1.0, -13.5, 14);
   const pz = clamp(player.pos.z + fz*1.0, -9, 13);
   player.holder.remove(c.group);
