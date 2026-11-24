@@ -23,7 +23,7 @@ const saveSet = () => localStorage.setItem(SKEY, JSON.stringify(S));
    Sound — alles per WebAudio synthetisiert (keine Dateien)
    ========================================================== */
 const AU = {
-  ctx:null, master:null, mus:null, sfx:null, step:0, timer:null,
+  ctx:null, master:null, mus:null, sfx:null, mstep:0, timer:null,
   init(){
     if(this.ctx) return;
     const C = window.AudioContext || window.webkitAudioContext;
@@ -78,8 +78,8 @@ const AU = {
     const scale=[262,294,330,392,440,523,587,659];
     const seq=[0,2,4,3,5,4,2,1,0,2,4,5,7,5,4,2];
     this.timer = setInterval(()=>{
-      if(!this.ctx || S.music<=0 || this.ctx.state!=='running'){ this.step++; return; }
-      const t = this.ctx.currentTime, s = this.step++ % 16;
+      if(!this.ctx || S.music<=0 || this.ctx.state!=='running'){ this.mstep++; return; }
+      const t = this.ctx.currentTime, s = this.mstep++ % 16;
       const o = this.ctx.createOscillator(), a = this.ctx.createGain();
       o.type='triangle'; o.frequency.value = scale[seq[s]]/2;
       a.gain.setValueAtTime(0.0001,t);
