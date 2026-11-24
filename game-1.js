@@ -111,8 +111,13 @@ scene.fog = new THREE.Fog(0x9ad7f2, 55, 135);
 
 const camera = new THREE.PerspectiveCamera(72, 1, 0.03, 240);
 camera.rotation.order = 'YXZ';
-scene.add(new THREE.HemisphereLight(0xffffff, 0x9a8f7a, 0.85));
-scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+scene.add(new THREE.HemisphereLight(0xf7faff, 0xb09a7c, 0.82));
+scene.add(new THREE.AmbientLight(0xfff0dc, 0.15));
+
+/* weiches Fülllicht von vorne, damit Regale und Kunden plastischer wirken */
+const fill = new THREE.DirectionalLight(0xffe6c2, 0.3);
+fill.position.set(-9, 7, 17);
+scene.add(fill);
 
 const sun = new THREE.DirectionalLight(0xfff2d4, 1.15);
 sun.position.set(16, 24, 12);
