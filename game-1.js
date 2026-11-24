@@ -109,8 +109,10 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9ad7f2);
 scene.fog = new THREE.Fog(0x9ad7f2, 55, 135);
 
-const camera = new THREE.PerspectiveCamera(58, 1, 0.08, 240);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.03, 240);
+camera.rotation.order = 'YXZ';
 scene.add(new THREE.HemisphereLight(0xffffff, 0x9a8f7a, 0.85));
+scene.add(new THREE.AmbientLight(0xffffff, 0.18));
 
 const sun = new THREE.DirectionalLight(0xfff2d4, 1.15);
 sun.position.set(16, 24, 12);
