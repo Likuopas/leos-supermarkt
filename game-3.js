@@ -33,22 +33,22 @@ function buildPlayer(){
   function arm(side){
     const g = new THREE.Group();
     /* Ärmel */
-    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.07, 0.20, 8), sleeveM);
-    sleeve.rotation.x = Math.PI/2; sleeve.position.z = -0.09; g.add(sleeve);
-    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.06, 0.035, 8), cuffM);
-    cuff.rotation.x = Math.PI/2; cuff.position.z = -0.20; g.add(cuff);
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.062, 0.18, 8), sleeveM);
+    sleeve.rotation.x = Math.PI/2; sleeve.position.z = -0.08; g.add(sleeve);
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.049, 0.054, 0.03, 8), cuffM);
+    cuff.rotation.x = Math.PI/2; cuff.position.z = -0.175; g.add(cuff);
     /* Unterarm */
-    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.055, 0.13, 8), skinM);
-    fore.rotation.x = Math.PI/2; fore.position.z = -0.25; g.add(fore);
+    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.048, 0.12, 8), skinM);
+    fore.rotation.x = Math.PI/2; fore.position.z = -0.225; g.add(fore);
 
     /* Hand als eigene Gruppe – leicht nach unten gekippt */
     const hand = new THREE.Group();
-    hand.position.z = -0.305;
+    hand.position.z = -0.275;
     hand.rotation.x = -0.30;
-    const wrist = new THREE.Mesh(new THREE.BoxGeometry(0.082, 0.048, 0.06), skinM);
+    const wrist = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.044, 0.055), skinM);
     wrist.position.z = -0.01; hand.add(wrist);
-    const palm = new THREE.Mesh(new THREE.BoxGeometry(0.098, 0.046, 0.115), skinM);
-    palm.position.z = -0.10; hand.add(palm);
+    const palm = new THREE.Mesh(new THREE.BoxGeometry(0.086, 0.042, 0.10), skinM);
+    palm.position.z = -0.09; hand.add(palm);
     /* Finger (leicht gefächert und gebeugt) */
     for(let i=0;i<4;i++){
       const len = i === 0 ? 0.066 : (i === 3 ? 0.05 : 0.059);
@@ -73,11 +73,12 @@ function buildPlayer(){
     thumbBase.add(th);
     hand.add(thumbBase);
     g.add(hand);
+    g.userData.hand = hand;
 
     g.traverse(o => { if(o.isMesh){ o.castShadow = false; o.receiveShadow = false; } });
-    g.position.set(side * 0.30, -0.27, -0.32);
+    g.position.set(side * 0.30, -0.325, -0.40);
     g.rotation.order = 'YXZ';
-    g.rotation.set(0.28, side * 0.30, side * 0.18);
+    g.rotation.set(0.34, side * 0.24, side * 0.14);
     view.add(g);
     return g;
   }
@@ -89,7 +90,8 @@ function buildPlayer(){
   holder.position.set(0, -0.10, -0.72);
   view.add(holder);
 
-  view.scale.setScalar(0.94);
+  /* etwas kleiner, damit die Arme nicht das halbe Bild verdecken */
+  view.scale.setScalar(0.84);
   player.view = view;
   player.holder = holder;
   player.group = null;
@@ -144,12 +146,14 @@ function updatePlayer(dt){
     let dx = fx*nz + rx*nx, dz = fz*nz + rz*nx;
     const dl = Math.hypot(dx, dz) || 1;
     dx /= dl; dz /= dl;
-    const sp = player.speed * Math.min(1, len) * dt;
+    /* Sprint mit Shift: schneller durch den Laden, ohne neue Taste */
+    const sprint = (keys['ShiftLeft'] || keys['ShiftRight']) ? 1.55 : 1;
+    const sp = player.speed * sprint * Math.min(1, len) * dt;
     player.pos.x += dx*sp;
     player.pos.z += dz*sp;
     player.yaw = Math.atan2(-dx, -dz);
     moving = true;
-    player.phase += dt*10;
+    player.phase += dt*10*sprint;
   } else {
     player.phase += dt*1.6;
   }
@@ -236,6 +240,8 @@ function updateTarget(){
     if(score > bestScore){ bestScore = score; best = c; }
   }
   target = best;
+  /* Ziel-Ring am Fadenkreuz: zeigt, dass etwas in Reichweite ist */
+  $('#hitzone').classList.toggle('on', !!best);
   if(player.held && player.held.kind === 'crate'){ setPrompt('Karton abstellen (E)', true); return; }
   if(!best){ setPrompt('', false); return; }
   let label = best.label;
@@ -257,24 +263,32 @@ function interact(){
 
 /* ---------- Getragene Dinge ---------- */
 function setHeld(obj){
+  clearHeld();
   player.held = obj;
-  const h = player.holder;
-  while(h.children.length) h.remove(h.children[0]);
   if(!obj) return;
+  const h = player.holder;
   if(obj.kind === 'crate'){
     const g = obj.crate.group;
     g.position.set(0, 0.02, 0);
     g.rotation.set(0, 0, 0);
-    g.scale.setScalar(0.5);
-    h.position.set(0.03, -0.50, -1.14);
+    g.scale.setScalar(0.62);
+    h.position.set(0.03, -0.46, -1.12);
     h.add(g);
     obj.crate.carried = true;
   } else {
-    h.position.set(0.14, -0.18, -0.66);
+    /* Produkt steckt in der rechten Hand – so schwebt es nicht daneben */
+    const hand = player.armR && player.armR.userData.hand;
     const m = productMesh(obj.pid);
-    m.rotation.set(0.20, -0.35, 0);
-    m.scale.setScalar(0.92);
-    h.add(m);
+    m.rotation.set(0.3, -0.18, 0.04);
+    m.scale.setScalar(0.82);
+    if(hand){
+      m.position.set(0, -0.035, -0.15);
+      hand.add(m);
+      player.heldNode = m;
+    } else {
+      h.position.set(0.14, -0.18, -0.66);
+      h.add(m);
+    }
   }
 }
 
@@ -283,6 +297,10 @@ function clearHeld(){
   if(o && o.kind === 'crate'){
     o.crate.carried = false;
     o.crate.group.scale.setScalar(1);
+  }
+  if(player.heldNode){
+    if(player.heldNode.parent) player.heldNode.parent.remove(player.heldNode);
+    player.heldNode = null;
   }
   player.held = null;
   const h = player.holder;
@@ -294,11 +312,22 @@ function clearHeld(){
    ========================================================== */
 function makeCrate(pid, qty){
   const g = new THREE.Group();
-  const card = mat(0xc99155), dark = mat(0xa9763f);
+  const card = mat(0xcb9b62), dark = mat(0xac7c46), edge = mat(0x966a3c);
   const body = new THREE.Mesh(new THREE.BoxGeometry(.74,.5,.74), card);
   body.position.y = .25; body.castShadow = true; body.receiveShadow = true; g.add(body);
-  const inner = new THREE.Mesh(new THREE.BoxGeometry(.62,.42,.62), mat(0x6b4a2a));
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(.62,.42,.62), mat(0x7a5432));
   inner.position.y = .3; g.add(inner);
+  /* Kantenprofil */
+  for(const sx of [-1,1]) for(const sz of [-1,1]){
+    const post = new THREE.Mesh(new THREE.BoxGeometry(.045,.5,.045), edge);
+    post.position.set(sx*.365, .25, sz*.365);
+    g.add(post);
+  }
+  for(const sy of [.02,.48]){
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(.76,.035,.76), edge);
+    rim.position.y = sy;
+    g.add(rim);
+  }
   const flaps = [];
   for(const sz of [-1,1]){
     const piv = new THREE.Group();
@@ -308,17 +337,22 @@ function makeCrate(pid, qty){
     piv.add(fm); g.add(piv);
     flaps.push({piv:piv, sz:sz, open:0});
   }
-  const tape = mat(0xe3d3ae);
+  const tape = mat(0xe8d9b6);
   const tapeTop = new THREE.Mesh(new THREE.BoxGeometry(.3,.012,.78), tape);
-  tapeTop.position.set(0,.505,0); g.add(tapeTop);
+  tapeTop.position.set(0,.528,0); g.add(tapeTop);
   const tapeSide = new THREE.Mesh(new THREE.BoxGeometry(.76,.012,.09), tape);
   tapeSide.position.set(0,.503,.29); g.add(tapeSide);
   const label = new THREE.Mesh(
     new THREE.PlaneGeometry(.46,.24),
-    new THREE.MeshLambertMaterial({map: signTexture(PMAP[pid].name + ' ×' + qty, '', '#fff7e8', '#2b2118')})
+    new THREE.MeshLambertMaterial({map: signTexture(PMAP[pid].name + ' ×' + qty, 'LEO\'S', '#fff7e8', '#2b2118')})
   );
-  label.position.set(0, .27, .372);
+  label.position.set(0, .27, .375);
   g.add(label);
+  for(let i=0;i<5;i++){
+    const bar = new THREE.Mesh(new THREE.PlaneGeometry(.006,.05), mat(0x3a2f26));
+    bar.position.set(-.16 + i*.012, .18, .377);
+    g.add(bar);
+  }
   const c = {
     group: g, pid: pid, qty: qty, opened: false, carried: false,
     flaps: flaps, openAmt: 0, contents: []
@@ -578,14 +612,34 @@ function closeOrder(){
   $('#order').classList.remove('show');
 }
 
+/* Hinweise: gleiche Meldung wird nicht gestapelt (nur aufgefrischt),
+   höchstens zwei gleichzeitig – so verdeckt nichts mehr das Spielfeld. */
+const toastLive = new Map();
 function toast(msg, type){
-  const el = document.createElement('div');
-  if(type) el.className = type;
-  el.textContent = msg;
-  $('#toast').appendChild(el);
-  setTimeout(() => {
-    el.style.transition = 'opacity .35s';
-    el.style.opacity = '0';
-    setTimeout(() => el.remove(), 360);
-  }, 2500);
+  const wrap = $('#toast');
+  let el = toastLive.get(msg);
+  if(el && el.parentNode === wrap){
+    clearTimeout(el._t1); clearTimeout(el._t2);
+    el.classList.remove('out');
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+  } else {
+    el = document.createElement('div');
+    if(type) el.className = type;
+    el.textContent = msg;
+    wrap.appendChild(el);
+    toastLive.set(msg, el);
+    while(wrap.children.length > 2){
+      const old = wrap.firstElementChild;
+      if(!old) break;
+      if(toastLive.get(old.textContent) === old) toastLive.delete(old.textContent);
+      old.remove();
+    }
+  }
+  el._t1 = setTimeout(() => el.classList.add('out'), 2200);
+  el._t2 = setTimeout(() => {
+    el.remove();
+    if(toastLive.get(msg) === el) toastLive.delete(msg);
+  }, 2560);
 }
