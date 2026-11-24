@@ -168,3 +168,33 @@ function applyDisplayMode(){
     }
   }catch(e){ /* Browser kann es ohne direkten Klick ablehnen */ }
 }
+
+/* ==========================================================
+   Regal-Interaktion (aufgerufen aus game-3.js / interact())
+   ========================================================== */
+function shelfInteract(sh){
+  if(!sh) return;
+  if(player.held && player.held.kind === 'product'){
+    const pid = player.held.pid;
+    const cat = PMAP[pid].cat;
+    if(!sh.accepts(cat)){
+      toast(PMAP[pid].name + ' gehört nicht in ' + sh.def.label, 'bad');
+      AU.err();
+      return;
+    }
+    const slot = sh.firstEmpty(cat);
+    if(!slot){
+      toast(sh.def.label + ' ist voll', 'bad');
+      AU.err();
+      return;
+    }
+    sh.addProduct(slot, pid);
+    clearHeld();
+    AU.place();
+    updateHUD();
+    return;
+  }
+  if(player.held){ toast('Hände voll – erst ablegen', 'bad'); AU.err(); return; }
+  const used = sh.slots.filter(s => s.pid).length;
+  toast(sh.def.label + ': ' + used + '/' + sh.slots.length + ' Plätze belegt');
+}
