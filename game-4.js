@@ -5,47 +5,74 @@ function buildRegister(x, z){
   const g = new THREE.Group();
   g.position.set(x, 0, z);
   world.add(g);
-  const bodyMat = mat(0xf2e9dc), dark = mat(0x2e3944), metal = mat(0x9aa7b4);
+  const bodyMat = mat(0xf6efe3), dark = mat(0x2e3944), metal = mat(0x9aa7b4);
+  const M = m => { m.castShadow = true; m.receiveShadow = true; g.add(m); return m; };
 
-  const counter = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.0, 1.0), bodyMat);
-  counter.position.set(0, .5, -1.9);
-  counter.castShadow = true; counter.receiveShadow = true;
-  g.add(counter);
-  const strip = new THREE.Mesh(new THREE.BoxGeometry(1.76, .08, 1.06), mat(0x4fb6ff));
-  strip.position.set(0, 1.02, -1.9);
-  g.add(strip);
+  /* Theke */
+  M(new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.0, 1.0), bodyMat)).position.set(0, .5, -1.9);
+  M(new THREE.Mesh(new THREE.BoxGeometry(1.76, .09, 1.06), mat(0x4fb6ff))).position.set(0, 1.02, -1.9);
+  M(new THREE.Mesh(new THREE.BoxGeometry(1.72, .35, 1.02), mat(0xe8ddc9))).position.set(0, .18, -1.9);
+  /* Kassenschublade */
+  M(new THREE.Mesh(new THREE.BoxGeometry(1.0, .18, .06), dark)).position.set(0, .28, -2.42);
+  M(new THREE.Mesh(new THREE.BoxGeometry(.26, .05, .08), mat(0xffc93c))).position.set(0, .28, -2.46);
 
-  const belt = new THREE.Mesh(new THREE.BoxGeometry(1.02, .14, 3.0), dark);
-  belt.position.set(0, .86, 0); belt.receiveShadow = true;
-  g.add(belt);
-  const legs = new THREE.Mesh(new THREE.BoxGeometry(.2, .8, 3.0), metal);
-  legs.position.set(0, .4, 0);
-  g.add(legs);
+  /* Warenband */
+  M(new THREE.Mesh(new THREE.BoxGeometry(1.02, .14, 3.0), dark)).position.set(0, .86, 0);
+  M(new THREE.Mesh(new THREE.BoxGeometry(.18, .8, 3.0), metal)).position.set(0, .4, 0);
+  M(new THREE.Mesh(new THREE.BoxGeometry(1.08, .06, .08), mat(0x39424c))).position.set(0, .99, 1.48);
+  M(new THREE.Mesh(new THREE.BoxGeometry(1.08, .06, .08), mat(0x39424c))).position.set(0, .99, -1.48);
 
   const rollers = [];
-  for(let i=0;i<7;i++){
-    const r = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.94,8), metal);
+  for(let i=0;i<8;i++){
+    const r = new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.94,8), metal);
     r.rotation.z = Math.PI/2;
-    r.position.set(0, .94, -1.2 + i*0.4);
+    r.position.set(0, .945, -1.4 + i*0.4);
     g.add(r); rollers.push(r);
   }
 
-  const col = new THREE.Mesh(new THREE.BoxGeometry(.16, 1.2, .16), metal);
-  col.position.set(.78, .6, -.1);
-  g.add(col);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(.28, .12, .28), mat(0xff6b57));
-  head.position.set(.78, 1.24, -.25);
-  g.add(head);
+  /* Scanner */
+  M(new THREE.Mesh(new THREE.BoxGeometry(.34, .1, .34), metal)).position.set(.62, .99, -1.05);
+  M(new THREE.Mesh(new THREE.BoxGeometry(.30, .04, .30), mat(0x1f242a))).position.set(.62, 1.045, -1.05);
+  const laser = new THREE.Mesh(new THREE.BoxGeometry(.26, .012, .012),
+    new THREE.MeshBasicMaterial({color:0xff3b3b}));
+  laser.position.set(.62, 1.052, -1.05);
+  g.add(laser);
+  M(new THREE.Mesh(new THREE.BoxGeometry(.12, .12, .12), mat(0xff6b57))).position.set(.62, 1.1, -.86);
 
-  const mon = new THREE.Mesh(new THREE.BoxGeometry(.62, .44, .08), mat(0x2b2f36));
-  mon.position.set(-.7, 1.32, -1.55);
+  /* Kartenterminal */
+  const term = M(new THREE.Mesh(new THREE.BoxGeometry(.22, .06, .16), mat(0x39424c)));
+  term.position.set(-.5, 1.12, -1.6); term.rotation.x = -0.35;
+  M(new THREE.Mesh(new THREE.PlaneGeometry(.16, .09),
+    new THREE.MeshLambertMaterial({color:0x8ef0b8, emissive:0x39cf9b, emissiveIntensity:.5})))
+    .position.set(-.5, 1.16, -1.55);
+
+  /* Bon-Drucker */
+  M(new THREE.Mesh(new THREE.BoxGeometry(.3, .22, .26), mat(0xdad3c6))).position.set(-.62, 1.15, -1.95);
+  M(new THREE.Mesh(new THREE.BoxGeometry(.22, .012, .22), mat(0xfffaf0))).position.set(-.62, 1.27, -1.95);
+
+  /* Monitor */
+  const mon = M(new THREE.Mesh(new THREE.BoxGeometry(.62, .44, .08), mat(0x2b2f36)));
+  mon.position.set(-.68, 1.34, -1.55);
   mon.rotation.y = .55;
-  g.add(mon);
   const monScreen = new THREE.Mesh(new THREE.PlaneGeometry(.52, .34),
     new THREE.MeshLambertMaterial({color:0x2ad6a5, emissive:0x14a87c, emissiveIntensity:.5}));
-  monScreen.position.set(-.7, 1.32, -1.5);
+  monScreen.position.set(-.665, 1.34, -1.50);
   monScreen.rotation.y = .55;
   g.add(monScreen);
+
+  /* Tütenauslage */
+  M(new THREE.Mesh(new THREE.BoxGeometry(.9, .06, .7), metal)).position.set(-1.25, .86, -1.4);
+  M(new THREE.Mesh(new THREE.BoxGeometry(.06, .82, .06), metal)).position.set(-1.25, .43, -1.4);
+  for(let i=0;i<3;i++){
+    const bag = M(new THREE.Mesh(new THREE.BoxGeometry(.24, .38, .1), mat(i===0?0xfffaf0:0xf1ece0)));
+    bag.position.set(-1.45 + i*0.19, 1.05, -1.4);
+  }
+
+  /* Kassen-Schild */
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.1, .32),
+    new THREE.MeshLambertMaterial({map: signTexture('KASSE', 'Bitte hier bezahlen', '#4fb6ff', '#123b52'), side: THREE.DoubleSide}));
+  sign.position.set(0, 2.1, -2.25);
+  g.add(sign);
 
   addCollider(x, z - 0.9, 1.9, 3.3);
 
@@ -182,6 +209,8 @@ function navReset(){
   for(let x=0; x<NAV.w; x++){ NAV.blocked[x] = 1; NAV.blocked[(NAV.h-1)*NAV.w + x] = 1; }
   for(let z=0; z<NAV.h; z++){ NAV.blocked[z*NAV.w] = 1; NAV.blocked[z*NAV.w + NAV.w-1] = 1; }
   for(const c of colliders) navBlock(c.minX - 0.22, c.minZ - 0.22, c.maxX + 0.22, c.maxZ + 0.22);
+  /* Spielerzelle meiden, damit Kunden nicht durch ihn hindurch laufen */
+  if(typeof player !== 'undefined' && player.pos) navBlock(player.pos.x - 0.35, player.pos.z - 0.35, player.pos.x + 0.35, player.pos.z + 0.35);
 }
 
 function nearestFree(cx, cz){
@@ -253,30 +282,136 @@ const SHIRTS = [0xff6b57,0x4fb6ff,0x39cf9b,0xffc93c,0xff8fd1,0xb07bff,0xff9d5c,0
 const SKINS  = [0xffcf9f,0xe8b48a,0xc98a5c,0x8d5a3b,0xffdcc0];
 const HAIRS  = [0x3a2a1e,0x1f1a16,0xc9823a,0xe8d7a8,0x7a4a2a];
 
-function makeShopperMesh(scale){
+const PANTS = [0x3d4b5e, 0x2f3b4a, 0x5a4636, 0x46586b, 0x6b5a7a, 0x39424c];
+const SHOES = [0x2b2b33, 0x3b3028, 0x26323a];
+
+/* ---------- Figur: runder Kopf, Arme mit Händen, Schuhe, Korb ---------- */
+function makePerson(opt){
+  opt = opt || {};
+  const shirtCol = opt.shirt != null ? opt.shirt : pick(SHIRTS);
+  const skinCol  = opt.skin  != null ? opt.skin  : pick(SKINS);
+  const hairCol  = opt.hair  != null ? opt.hair  : pick(HAIRS);
+  const pantCol  = opt.pants != null ? opt.pants : pick(PANTS);
+  const shirt = mat(shirtCol), skin = mat(skinCol), pants = mat(pantCol);
+  const hairM = mat(hairCol), shoeM = mat(pick(SHOES)), darkM = mat(0x241a12);
+  const shade = c => mat(new THREE.Color(c).clone().multiplyScalar(0.82).getHex());
+
   const g = new THREE.Group();
-  const shirt = mat(pick(SHIRTS)), skin = mat(pick(SKINS)), pants = mat(0x3d4b5e), hairM = mat(pick(HAIRS));
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(.52,.58,.32), shirt);
-  torso.position.y = 1.02; torso.castShadow = true; g.add(torso);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(.44,.4,.4), skin);
-  head.position.y = 1.53; head.castShadow = true; g.add(head);
-  const hair = new THREE.Mesh(new THREE.BoxGeometry(.48,.12,.44), hairM);
-  hair.position.y = 1.73; g.add(hair);
-  const eyeGeo = new THREE.BoxGeometry(.06,.08,.03), eyeMat = mat(0x241a12);
-  const e1 = new THREE.Mesh(eyeGeo, eyeMat); e1.position.set(-.1,1.55,.205); g.add(e1);
-  const e2 = new THREE.Mesh(eyeGeo, eyeMat); e2.position.set(.1,1.55,.205); g.add(e2);
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.06), skin);
-  nose.position.set(0,1.47,.21); g.add(nose);
-  const armGeo = new THREE.BoxGeometry(.14,.46,.16); armGeo.translate(0,-.23,0);
-  const aL = new THREE.Mesh(armGeo, shirt); aL.position.set(-.34,1.28,0); g.add(aL);
-  const aR = new THREE.Mesh(armGeo, shirt); aR.position.set(.34,1.28,0); g.add(aR);
-  const legGeo = new THREE.BoxGeometry(.18,.5,.2); legGeo.translate(0,-.25,0);
-  const lL = new THREE.Mesh(legGeo, pants); lL.position.set(-.13,.55,0); g.add(lL);
-  const lR = new THREE.Mesh(legGeo, pants); lR.position.set(.13,.55,0); g.add(lR);
-  const basket = new THREE.Mesh(new THREE.BoxGeometry(.4,.2,.3), mat(0xd9dee4));
-  basket.position.set(.3,.72,.22); g.add(basket);
-  if(scale) g.scale.setScalar(scale);
-  return {group:g, legL:lL, legR:lR, armL:aL, armR:aR, basket:basket};
+  const M = m => { m.castShadow = true; return m; };
+
+  /* Beine + Schuhe */
+  const legGeo = new THREE.CylinderGeometry(.082, .07, .6, 6);
+  legGeo.translate(0, -.3, 0);
+  const shoeGeo = new THREE.BoxGeometry(.15, .095, .26);
+  shoeGeo.translate(0, 0, .04);
+  function leg(sx){
+    const grp = new THREE.Group();
+    grp.position.set(sx*.11, .72, 0);
+    grp.add(M(new THREE.Mesh(legGeo, pants)));
+    const shoe = M(new THREE.Mesh(shoeGeo, shoeM));
+    shoe.position.set(0, -.585, 0);
+    grp.add(shoe);
+    g.add(grp);
+    return grp;
+  }
+  const legL = leg(-1), legR = leg(1);
+
+  /* Körper */
+  M(new THREE.Mesh(new THREE.CylinderGeometry(.22, .2, .2, 7), pants)).position.y = .78;
+  M(new THREE.Mesh(new THREE.CylinderGeometry(.25, .22, .46, 7), shirt)).position.y = 1.08;
+  M(new THREE.Mesh(new THREE.CylinderGeometry(.28, .25, .11, 7), shirt)).position.y = 1.33;
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(.1, .12, .07, 7), shade(shirtCol));
+  collar.position.y = 1.4; g.add(collar);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(.068, .076, .09, 6), skin);
+  neck.position.y = 1.42; g.add(neck);
+
+  /* Kopf */
+  const head = M(new THREE.Mesh(new THREE.IcosahedronGeometry(.165, 1), skin));
+  head.position.y = 1.52;
+  head.scale.set(1, 1.07, .96);
+  g.add(head);
+  for(const sx of [-1,1]){
+    const ear = new THREE.Mesh(new THREE.IcosahedronGeometry(.04, 0), skin);
+    ear.position.set(sx*.157, 1.52, 0);
+    g.add(ear);
+  }
+  const hair = M(new THREE.Mesh(new THREE.SphereGeometry(.176, 8, 5, 0, Math.PI*2, 0, Math.PI*.48), hairM));
+  hair.position.y = 1.545;
+  hair.rotation.y = rnd(0, Math.PI);
+  g.add(hair);
+  for(const sx of [-1,1]){
+    const eye = new THREE.Mesh(new THREE.IcosahedronGeometry(.026, 1), darkM);
+    eye.position.set(sx*.06, 1.542, .147);
+    g.add(eye);
+    const glint = new THREE.Mesh(new THREE.IcosahedronGeometry(.008, 0), mat(0xffffff));
+    glint.position.set(sx*.055, 1.552, .166);
+    g.add(glint);
+  }
+  const nose = new THREE.Mesh(new THREE.IcosahedronGeometry(.029, 0), skin);
+  nose.position.set(0, 1.494, .166);
+  g.add(nose);
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(.052, .015, .013), mat(0xa8524a));
+  mouth.position.set(0, 1.45, .155);
+  g.add(mouth);
+
+  /* Arme mit Händen */
+  const upGeo = new THREE.CylinderGeometry(.07, .062, .24, 6); upGeo.translate(0, -.12, 0);
+  const foreGeo = new THREE.CylinderGeometry(.057, .05, .22, 6); foreGeo.translate(0, -.34, 0);
+  const handGeo = new THREE.BoxGeometry(.095, .105, .08); handGeo.translate(0, -.49, 0);
+  function arm(sx){
+    const grp = new THREE.Group();
+    grp.position.set(sx*.275, 1.34, 0);
+    grp.add(M(new THREE.Mesh(upGeo, shirt)));
+    grp.add(M(new THREE.Mesh(foreGeo, skin)));
+    grp.add(M(new THREE.Mesh(handGeo, skin)));
+    grp.rotation.z = sx*.05;
+    g.add(grp);
+    return grp;
+  }
+  const armL = arm(-1), armR = arm(1);
+
+  /* Einkaufskorb am linken Arm */
+  const basket = new THREE.Group();
+  basket.position.set(0, -.54, .04);
+  const bMat = mat(0xd9dee4), bRim = mat(0xffc93c);
+  [[0,-.2,0,.33,.03,.25],[0,-.13,-.12,.33,.13,.02],[0,-.13,.12,.33,.13,.02],
+   [-.165,-.13,0,.02,.13,.25],[.165,-.13,0,.02,.13,.25]].forEach(a => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(a[3],a[4],a[5]), bMat);
+    m.position.set(a[0],a[1],a[2]); basket.add(m);
+  });
+  const rimB = new THREE.Mesh(new THREE.BoxGeometry(.36,.03,.28), bRim);
+  rimB.position.y = -.065; basket.add(rimB);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(.14,.014,4,8,Math.PI), bRim);
+  handle.rotation.y = Math.PI/2; handle.position.y = -.06; basket.add(handle);
+  armL.add(basket);
+
+  /* Dienstkleidung */
+  if(opt.apron){
+    const apron = new THREE.Mesh(new THREE.BoxGeometry(.34,.46,.05), mat(opt.apron));
+    apron.position.set(0, 1.0, .2);
+    g.add(apron);
+    const badge = new THREE.Mesh(new THREE.BoxGeometry(.11,.07,.012), mat(0xffffff));
+    badge.position.set(.09, 1.17, .228);
+    g.add(badge);
+  }
+  if(opt.cap){
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(.178,.186,.075,8), mat(opt.cap));
+    cap.position.y = 1.655;
+    cap.castShadow = true;
+    g.add(cap);
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(.24,.028,.15), mat(opt.cap));
+    brim.position.set(0, 1.628, .135);
+    g.add(brim);
+    hair.visible = false;
+  }
+
+  return {group:g, legL:legL, legR:legR, armL:armL, armR:armR, basket:basket, head:head};
+}
+
+function makeShopperMesh(scale, opt){
+  const p = makePerson(opt);
+  if(scale) p.group.scale.setScalar(scale);
+  return p;
 }
 
 class Shopper {
@@ -317,6 +452,14 @@ class Shopper {
     const s = Math.min(this.speed*dt, d);
     this.pos.x += dx/d*s;
     this.pos.z += dz/d*s;
+    /* nicht durch den Spieler laufen */
+    const px = this.pos.x - player.pos.x, pz = this.pos.z - player.pos.z;
+    const pd = Math.hypot(px, pz);
+    if(pd < 1.15 && pd > 0.0001){
+      const push = (1.15 - pd) * 0.85;
+      this.pos.x += px/pd*push;
+      this.pos.z += pz/pd*push;
+    }
     this.group.position.set(this.pos.x, 0, this.pos.z);
     this.group.rotation.y = Math.atan2(dx, dz);
     this.phase += dt*8;
@@ -392,9 +535,10 @@ class Shopper {
     if(sh && sh.removeProduct(pid)){
       this.basket.push(pid);
       if(this.basketMeshes.length < 4){
+        const k = this.basketMeshes.length;
         const m = productMesh(pid);
-        m.scale.setScalar(0.62);
-        m.position.set(-0.12 + (this.basketMeshes.length%2)*0.24, 0.1, 0);
+        m.scale.setScalar(0.52);
+        m.position.set(-0.1 + (k%2)*0.2, -0.19, -0.06 + Math.floor(k/2)*0.12);
         this.mesh.basket.add(m);
         this.basketMeshes.push(m);
       }
@@ -502,7 +646,8 @@ class Shopper {
 
 function updateShoppers(dt){
   for(let i=shoppers.length-1; i>=0; i--){
-    shoppers[i].update(dt);
-    if(shoppers[i].dead) shoppers.splice(i, 1);
+    const s = shoppers[i];
+    s.update(dt);
+    if(s.dead) shoppers.splice(i, 1);
   }
 }
