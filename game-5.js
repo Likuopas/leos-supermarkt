@@ -95,8 +95,10 @@ function updateHUD(){
   let stock = 0;
   for(const s of shelves) for(const sl of s.slots) if(sl.pid) stock++;
   const openCrates = crates.filter(c => c.qty > 0).length;
+  const waiting = shoppers.filter(s => s.state === 'wait' || s.state === 'queue' || s.state === 'unload').length;
   let txt;
-  if(openCrates > 0) txt = 'Kartons öffnen und Produkte ins Regal räumen';
+  if(waiting > 0) txt = 'Kunden an der Kasse bedienen (' + waiting + ' wartet)';
+  else if(openCrates > 0) txt = 'Kartons öffnen und Produkte ins Regal räumen';
   else if(stock < 10) txt = 'Am Terminal Ware bestellen';
   else txt = 'Kunden bedienen · Regale auffüllen';
   $('#objText').textContent = txt;
@@ -240,7 +242,9 @@ function closeSettings(){
 function applySettingsChange(){
   applyGraphics();
   AU.vol();
-  $('#touch').classList.toggle('hidden', !(gameState === 'play' && isMobile()));
+  const touch = isMobile();
+  document.body.classList.toggle('touch', touch);
+  $('#touch').classList.toggle('hidden', !(gameState === 'play' && touch));
 }
 
 function initUI(){
@@ -466,7 +470,9 @@ function startGame(){
   gameState = 'play';
   panelOpen = false;
   AU.init();
-  if(isMobile()) $('#touch').classList.remove('hidden');
+  const touch = isMobile();
+  document.body.classList.toggle('touch', touch);
+  if(touch) $('#touch').classList.remove('hidden');
   updateHUD();
   requestLock();
 }
